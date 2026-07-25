@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: ./docker/nginx/Dockerfile
+    container_name: syncbridge_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+      - frontend
+    restart: always
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: syncbridge_backend
+    environment:
+      - FLASK_ENV=production
+      - SQLALCHEMY_DATABASE_URI=mysql+pymysql://syncuser:syncpass@db:3306/syncbridgedb
+      - REDIS_URL=redis://redis:6379/0
+      - JWT_SECRET_KEY=prod_super_secret_jwt_key_998877
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: always
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: syncbridge_frontend
+    restart: always
+
+  db:
+    image: mysql:8.0
+    container_name: syncbridge_db
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: syncbridgedb
+      MYSQL_USER: syncuser
+      MYSQL_PASSWORD: syncpass
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: always
+
+  redis:
+    image: redis:7-alpine
+    container_name: syncbridge_redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    restart: always
+
+volumes:
+  mysql_data:
+  redis_data:

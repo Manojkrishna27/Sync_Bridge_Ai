@@ -1,0 +1,52 @@
+name: SyncBridge AI Gateway CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r backend/requirements.txt pytest
+
+    - name: Run Pytest Suite Across All Milestones
+      env:
+        PYTHONPATH: backend
+        REDIS_URL: redis://localhost:6379/0
+      run: |
+        python -m pytest backend/tests/
+
+  docker-build:
+    needs: lint-and-test
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Build Backend Docker Image
+      run: docker build -t syncbridge-backend:latest ./backend
+
+    - name: Build Frontend Docker Image
+      run: docker build -t syncbridge-frontend:latest ./frontend
+
+    - name: Build Nginx Docker Image
+      run: docker build -t syncbridge-nginx:latest -f ./docker/nginx/Dockerfile .
