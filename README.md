@@ -79,64 +79,66 @@ At its core, SyncBridge AI combines a **sub-8ms protocol conversion engine** wit
 
 ## 🏗️ System Architecture
 
-```mermaid
-flowchart TB
-    subgraph Clients ["Client Layer"]
-        REST["🌐 REST Clients"]
-        SOAP["📜 SOAP / XML"]
-        SFTP["📁 SFTP Files"]
-        GRPC["⚡ gRPC Services"]
-        UI["💻 React Administrative Studio"]
-    end
-
-    subgraph Gateway ["Ingress & Ingress Proxy"]
-        Nginx["🛡️ Nginx Reverse Proxy / SSL Termination"]
-    end
-
-    subgraph Security ["Security & Governance"]
-        AuthGuard["🔐 OAuth2 / JWT Engine"]
-        RBAC["🛡️ Tenant & RBAC Policy"]
-        RateLimiter["⚡ Redis Rate Limiter"]
-    end
-
-    subgraph Core ["SyncBridge Core Gateway"]
-        ProtoDetect["🔍 Protocol Detector"]
-        Validator["✅ Structural Schema Validator"]
-        TransformEngine["🔄 JSLT Mapping Engine"]
-        Dispatcher["🚀 Protocol Dispatcher"]
-    end
-
-    subgraph AISubsystem ["AI & RAG Orchestration"]
-        AgentSwarm["🐝 Multi-Agent Swarm (Planner, Mapper, Auditor)"]
-        Qdrant[("🗂️ Qdrant Vector Store")]
-    end
-
-    subgraph Persistence ["Persistence & Cache"]
-        Redis[("⚡ Redis 7.2 Cache & Queue")]
-        MySQL[("🗄️ MySQL 8.0 Metadata DB")]
-    end
-
-    REST --> Nginx
-    SOAP --> Nginx
-    SFTP --> Nginx
-    GRPC --> Nginx
-    UI --> Nginx
-
-    Nginx --> AuthGuard
-    AuthGuard --> RBAC
-    RBAC --> RateLimiter
-
-    RateLimiter --> ProtoDetect
-    ProtoDetect --> Validator
-    Validator --> TransformEngine
-    TransformEngine --> Dispatcher
-
-    TransformEngine <--> AgentSwarm
-    AgentSwarm <--> Qdrant
-
-    Core --> Redis
-    Core --> MySQL
 ```
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                     CLIENT & INGRESS LAYER                                       │
+│   [ REST / Webhooks ]   [ SOAP / XML ]   [ SFTP / CSV Files ]   [ gRPC Microservices ]   [ Web UI ]  │
+└───────────────────────────────────────────────┬──────────────────────────────────────────────────┘
+                                                │
+                                                ▼
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                 NGINX INGRESS & REVERSE PROXY                                    │
+│                     • SSL/TLS Termination   • Rate Limiting   • CORS Enforcement                     │
+└───────────────────────────────────────────────┬──────────────────────────────────────────────────┘
+                                                │
+                                                ▼
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                 SECURITY & GOVERNANCE PLANE                                      │
+│           • OAuth2 / JWT Auth Engine   • Tenant Isolation & RBAC   • HMAC API Key Signer           │
+└───────────────────────────────────────────────┬──────────────────────────────────────────────────┘
+                                                │
+                                                ▼
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                              SYNCBRIDGE AI CORE EXECUTION ENGINE                                 │
+│   ┌─────────────────────┐   ┌───────────────────────────┐   ┌────────────────────────────────┐   │
+│   │ Protocol Detector   │──>│ Structural Schema Validator│──>│ JSLT / JSONPath Mapping Engine │   │
+│   └─────────────────────┘   └───────────────────────────┘   └───────────────┬────────────────┘   │
+│                                                                             │                    │
+│                                                                             ▼                    │
+│                                                             ┌────────────────────────────────┐   │
+│                                                             │  Outbound Protocol Dispatcher  │   │
+│                                                             └────────────────────────────────┘   │
+└───────────────────────────────────────────────┬──────────────────────────────────────────────────┘
+                                                │
+                       ┌────────────────────────┴────────────────────────┐
+                       ▼                                                 ▼
+┌───────────────────────────────────────────────┐     ┌──────────────────────────────────────────┐
+│         AUTONOMOUS AI & RAG SUBSYSTEM         │     │         STATE & PERSISTENCE LAYER        │
+│   • Multi-Agent Swarm (Planner/Mapper/Auditor)│     │   • MySQL 8.0 (Tenants, Rules, Audit Logs) │
+│   • Hybrid RAG & Qdrant Vector Search Engine  │     │   • Redis 7.2 (Cache, State, Task Queues)│
+└───────────────────────────────────────────────┘     └──────────────────────────────────────────┘
+```
+
+<details>
+<summary><b>Click to view interactive Mermaid Flowchart</b></summary>
+
+```mermaid
+graph TD
+    Client[Clients: REST / SOAP / SFTP / gRPC / Web UI] --> Nginx[Nginx Ingress Proxy]
+    Nginx --> Auth[OAuth2 / JWT & Security Plane]
+    Auth --> CoreEngine[SyncBridge AI Core Engine]
+
+    subgraph CoreEngine [Core Execution Pipeline]
+        Detect[Protocol Detector] --> Validate[Schema Validator]
+        Validate --> Transform[Mapping Transformer]
+        Transform --> Dispatch[Outbound Dispatcher]
+    end
+
+    CoreEngine <--> AI[Multi-Agent AI & Qdrant Vector RAG]
+    CoreEngine <--> Storage[(MySQL 8.0 & Redis 7.2 Cache)]
+```
+
+</details>
 
 ---
 
