@@ -38,7 +38,7 @@ export default function MonitoringDashboard() {
       setHealthData(healthRes.data);
     } catch (err) {
       console.error("Failed to fetch monitoring telemetry:", err);
-    } fontally: {
+    } finally {
       setLoading(false);
     }
   };
