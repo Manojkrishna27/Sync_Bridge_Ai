@@ -20,6 +20,10 @@
 
 [Explore Documentation](docs/) · [Report Bug](https://github.com/Manojkrishna27/Sync_Bridge_Ai/issues) · [Request Feature](https://github.com/Manojkrishna27/Sync_Bridge_Ai/issues)
 
+<br />
+
+![SyncBridge AI Platform](Screenshots/project_image.png)
+
 ---
 
 </div>
