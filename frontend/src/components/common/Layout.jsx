@@ -9,7 +9,7 @@ const SidebarItem = ({ to, icon: Icon, label, isActive }) => (
     to={to}
     className={`flex items-center space-x-3 rounded-xl px-4 py-2.5 text-sm font-medium transition-all ${
       isActive 
-        ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30 font-semibold shadow-sm' 
+        ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 font-semibold shadow-sm'
         : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
     }`}
   >
@@ -73,10 +73,10 @@ export default function Layout() {
         <div className="flex h-full flex-col justify-between">
           <div>
             <div className="hidden h-16 items-center px-6 md:flex border-b border-slate-800/80 justify-between">
-              <h1 className="text-lg font-bold bg-gradient-to-r from-blue-400 via-indigo-300 to-cyan-400 bg-clip-text text-transparent">
+              <h1 className="text-lg font-bold bg-gradient-to-r from-indigo-400 via-indigo-300 to-cyan-400 bg-clip-text text-transparent">
                 SyncBridge AI
               </h1>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/30">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/30">
                 v2.4
               </span>
             </div>
@@ -111,7 +111,7 @@ export default function Layout() {
           <div className="border-t border-slate-800/80 p-4 bg-slate-900/50">
             <div className="mb-3 px-2 text-xs text-slate-400">
               <p className="font-semibold text-slate-200">{user?.first_name || 'Admin'} {user?.last_name || 'User'}</p>
-              <p className="text-[10px] font-mono uppercase mt-0.5 text-blue-400">{user?.role?.name || 'Super Admin'}</p>
+              <p className="text-[10px] font-mono uppercase mt-0.5 text-indigo-400">{user?.role?.name || 'Super Admin'}</p>
             </div>
             <button 
               onClick={logout}
