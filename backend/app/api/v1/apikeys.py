@@ -1,6 +1,8 @@
 from flask import request
 from flask_restx import Namespace, Resource, fields
+from flask_jwt_extended import get_jwt_identity, verify_jwt_in_request
 from app.services.api_key_service import APIKeyService
+from app.core.security import require_permission
 
 ns = Namespace('apikeys', description='Client API Key Security & Lifecycle Operations')
 api = ns
@@ -13,12 +15,20 @@ api_key_input_model = ns.model('APIKeyInput', {
 
 api_key_service = APIKeyService()
 
+def _get_active_user_id():
+    try:
+        verify_jwt_in_request(optional=True)
+        return get_jwt_identity() or request.headers.get('X-User-ID', 'system')
+    except Exception:
+        return request.headers.get('X-User-ID', 'system')
+
 @ns.route('')
 class APIKeyListResource(Resource):
     @ns.doc('list_api_keys', params={
         'client_id': 'Filter keys by Client Tenant ID',
         'status': 'Filter by key status (Active, Revoked, Expired)'
     })
+    @require_permission('manage_clients')
     def get(self):
         """List API keys for a client (raw keys are NEVER included)."""
         client_id = request.args.get('client_id')
@@ -44,6 +54,7 @@ class APIKeyListResource(Resource):
 
     @ns.doc('generate_api_key')
     @ns.expect(api_key_input_model)
+    @require_permission('manage_clients')
     def post(self):
         """Generate a new client API Key. IMPORTANT: The raw API key secret is returned ONLY ONCE."""
         data = request.json or {}
@@ -53,7 +64,7 @@ class APIKeyListResource(Resource):
             return {'message': 'client_id and name are required'}, 400
 
         days_valid = data.get('days_valid', 365)
-        user_id = request.headers.get('X-User-ID', 'system')
+        user_id = _get_active_user_id()
 
         saved_key, raw_key = api_key_service.generate_key(
             client_id=client_id,
@@ -74,9 +85,10 @@ class APIKeyListResource(Resource):
 @ns.param('id', 'The API key identifier')
 class APIKeyRotateResource(Resource):
     @ns.doc('rotate_api_key')
+    @require_permission('manage_clients')
     def post(self, id):
         """Rotate an API Key: Revokes old key and issues new token. Raw key is returned ONLY ONCE."""
-        user_id = request.headers.get('X-User-ID', 'system')
+        user_id = _get_active_user_id()
         try:
             new_key, raw_key = api_key_service.rotate_key(id, user_id=user_id)
             return {
@@ -93,9 +105,10 @@ class APIKeyRotateResource(Resource):
 @ns.param('id', 'The API key identifier')
 class APIKeyRevokeResource(Resource):
     @ns.doc('revoke_api_key')
+    @require_permission('manage_clients')
     def post(self, id):
         """Revoke an active API Key."""
-        user_id = request.headers.get('X-User-ID', 'system')
+        user_id = _get_active_user_id()
         try:
             revoked = api_key_service.revoke_key(id, user_id=user_id)
             return {

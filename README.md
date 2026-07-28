@@ -173,6 +173,12 @@ SyncBridge AI introduces a collaborative multi-agent architecture to automate sc
 - **Database & Cache**: MySQL 8.0, Redis 7.2
 - **Infrastructure**: Docker, Docker Compose, Nginx, GitHub Actions CI/CD
 
+## 🔑 Default Login Credentials
+
+| Role | Email / Username | Password |
+| :--- | :--- | :--- |
+| **System Administrator** | `admin@syncbridge.ai` | `Admin123!` |
+
 ---
 
 ## ⚡ Quick Start

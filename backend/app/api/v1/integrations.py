@@ -1,6 +1,8 @@
 from flask import request
 from flask_restx import Namespace, Resource, fields
+from flask_jwt_extended import get_jwt_identity, verify_jwt_in_request
 from app.services.integration_service import IntegrationService
+from app.core.security import require_permission
 
 ns = Namespace('integrations', description='Integration Pipelines & Versioning Operations')
 api = ns
@@ -29,6 +31,13 @@ clone_input_model = ns.model('CloneInput', {
 })
 
 integration_service = IntegrationService()
+
+def _get_active_user_id():
+    try:
+        verify_jwt_in_request(optional=True)
+        return get_jwt_identity() or request.headers.get('X-User-ID', 'system')
+    except Exception:
+        return request.headers.get('X-User-ID', 'system')
 
 @ns.route('')
 class IntegrationListResource(Resource):
@@ -105,6 +114,7 @@ class IntegrationListResource(Resource):
 
     @ns.doc('create_integration')
     @ns.expect(integration_input_model)
+    @require_permission('manage_integrations')
     def post(self):
         """Create a new integration pipeline."""
         data = request.json or {}
@@ -112,12 +122,7 @@ class IntegrationListResource(Resource):
         if not client_id:
             return {'message': 'client_id is required'}, 400
 
-        from flask_jwt_extended import get_jwt_identity, verify_jwt_in_request
-        try:
-            verify_jwt_in_request(optional=True)
-            user_id = get_jwt_identity() or request.headers.get('X-User-ID')
-        except Exception:
-            user_id = request.headers.get('X-User-ID')
+        user_id = _get_active_user_id()
 
         try:
             integration = integration_service.create_integration(client_id, data, user_id=user_id)
@@ -169,10 +174,11 @@ class IntegrationResource(Resource):
 
     @ns.doc('update_integration')
     @ns.expect(integration_input_model)
+    @require_permission('manage_integrations')
     def put(self, id):
         """Update integration configuration and automatically increment version."""
         data = request.json or {}
-        user_id = request.headers.get('X-User-ID', 'system')
+        user_id = _get_active_user_id()
         try:
             updated = integration_service.update_integration(id, data, user_id=user_id)
             return {
@@ -212,6 +218,7 @@ class IntegrationVersionResource(Resource):
 class IntegrationRollbackResource(Resource):
     @ns.doc('rollback_integration')
     @ns.expect(rollback_input_model)
+    @require_permission('manage_integrations')
     def post(self, id):
         """Rollback an integration configuration to a previous version snapshot."""
         data = request.json or {}
@@ -219,7 +226,7 @@ class IntegrationRollbackResource(Resource):
         if not version_number:
             return {'message': 'version_number is required'}, 400
 
-        user_id = request.headers.get('X-User-ID', 'system')
+        user_id = _get_active_user_id()
         try:
             restored = integration_service.rollback_integration(id, version_number, user_id=user_id)
             return {
@@ -234,11 +241,12 @@ class IntegrationRollbackResource(Resource):
 class IntegrationCloneResource(Resource):
     @ns.doc('clone_integration')
     @ns.expect(clone_input_model)
+    @require_permission('manage_integrations')
     def post(self, id):
         """Clone an integration definition to a new environment."""
         data = request.json or {}
         target_env = data.get('target_environment', 'Staging')
-        user_id = request.headers.get('X-User-ID', 'system')
+        user_id = _get_active_user_id()
         try:
             cloned = integration_service.clone_integration(id, target_env, user_id=user_id)
             return {
