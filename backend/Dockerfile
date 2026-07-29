@@ -29,18 +29,23 @@ RUN groupadd -r syncuser && useradd -r -g syncuser syncuser
 COPY --from=builder /root/.local /home/syncuser/.local
 COPY . .
 
+# Copy entrypoint and make it executable (as root)
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 # Set permissions
 RUN chown -R syncuser:syncuser /app /home/syncuser/.local
 
 ENV PATH=/home/syncuser/.local/bin:$PATH
+ENV PYTHONPATH=/home/syncuser/.local/lib/python3.10/site-packages
 ENV PYTHONUNBUFFERED=1
 ENV FLASK_ENV=production
-
-USER syncuser
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:5000/api/v1/health || exit 1
 
 EXPOSE 5000
 
+# Entrypoint fixes DB permissions then hands off to the main command
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "--threads", "2", "wsgi:app"]
