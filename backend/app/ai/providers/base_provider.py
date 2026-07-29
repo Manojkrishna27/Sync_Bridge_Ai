@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 class BaseAIProvider(ABC):
-    """Abstract Base Class for AI Mapping Providers."""
+    """Abstract Base Class for AI Providers — mapping suggestions + chat completion."""
 
     @abstractmethod
     def generate_mapping_suggestions(
@@ -22,3 +22,17 @@ class BaseAIProvider(ABC):
           - suggested_validation (dict or None)
         """
         pass
+
+    @abstractmethod
+    def chat(
+        self,
+        system_prompt: str,
+        user_message: str,
+        context: Optional[str] = None
+    ) -> str:
+        """
+        Send a chat completion request to the LLM.
+        Returns the assistant's response text.
+        """
+        pass
+

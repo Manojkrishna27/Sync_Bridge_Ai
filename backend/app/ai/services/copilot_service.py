@@ -86,6 +86,16 @@ class CopilotService:
         # 5. Persist Assistant Message with Explainability Telemetry
         assistant_content = f"{agent_result['synthesized_response']}\n\n*Reference Context*: Loaded {len(retrieved_context)} document snippets."
 
+        # Detect which provider was actually used
+        used_provider = "MockProvider"
+        used_model = "heuristic"
+        if agent_result.get("agent_details"):
+            used_provider = agent_result["agent_details"][0].get("provider", "MockProvider")
+            if "OpenAI" in used_provider:
+                used_model = "gpt-3.5-turbo"
+            elif "Gemini" in used_provider:
+                used_model = "gemini-1.5-flash"
+
         asst_msg = Message(
             id=str(uuid.uuid4()),
             conversation_id=conversation_id,
@@ -100,9 +110,9 @@ class CopilotService:
             llm_time_ms=t_llm_ms,
             retrieval_time_ms=t_rag_ms,
             token_usage={"prompt_tokens": 120, "completion_tokens": 250, "total_tokens": 370},
-            provider="MockProvider",
-            model="gpt-3.5-turbo",
-            reasoning_summary=f"Processed query through {', '.join(agent_result['agents_executed'])} and retrieved RAG context."
+            provider=used_provider,
+            model=used_model,
+            reasoning_summary=f"Processed query through {', '.join(agent_result['agents_executed'])} using {used_provider}."
         )
         db.session.add(asst_msg)
 
@@ -111,8 +121,8 @@ class CopilotService:
             id=str(uuid.uuid4()),
             user_id=user_id,
             client_id=client_id,
-            provider="MockProvider",
-            model="gpt-3.5-turbo",
+            provider=used_provider,
+            model=used_model,
             prompt_tokens=120,
             completion_tokens=250,
             total_tokens=370,

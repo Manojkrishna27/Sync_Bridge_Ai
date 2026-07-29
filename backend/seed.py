@@ -22,6 +22,15 @@ def seed_database():
         else:
             print("Admin role already exists.")
 
+        # 1b. Create or get User Role (default role for self-registered accounts)
+        user_role = Role.query.filter_by(name="User").first()
+        if not user_role:
+            user_role = Role(id=str(uuid.uuid4()), name="User", description="Standard user with basic permissions")
+            db.session.add(user_role)
+            print("Created User role.")
+        else:
+            print("User role already exists.")
+
         # 2. Create or get permissions
         permissions_list = [
             ("manage_users", "Manage users and roles"),
@@ -43,12 +52,21 @@ def seed_database():
 
         db.session.commit()
 
-        # Assign permissions to Admin role
+        # Assign ALL permissions to Admin role
         for perm in created_perms:
             rp = RolePermission.query.filter_by(role_id=admin_role.id, permission_id=perm.id).first()
             if not rp:
                 rp = RolePermission(role_id=admin_role.id, permission_id=perm.id)
                 db.session.add(rp)
+
+        # Assign basic permissions to User role
+        user_perm_names = {"view_dashboard", "use_copilot", "execute_integrations"}
+        for perm in created_perms:
+            if perm.name in user_perm_names:
+                rp = RolePermission.query.filter_by(role_id=user_role.id, permission_id=perm.id).first()
+                if not rp:
+                    rp = RolePermission(role_id=user_role.id, permission_id=perm.id)
+                    db.session.add(rp)
         db.session.commit()
 
         # 3. Create Default Admin User

@@ -4,7 +4,8 @@ from marshmallow import ValidationError
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
 from app.services import auth_service
-from app.schemas.auth_schema import LoginSchema, ForgotPasswordSchema, ResetPasswordSchema
+from app.schemas.auth_schema import LoginSchema, RegisterSchema, ForgotPasswordSchema, ResetPasswordSchema
+from app.schemas.user_schema import UserSchema
 
 api = Namespace('Auth', description='Authentication related operations')
 
@@ -33,7 +34,24 @@ class Login(Resource):
             return resp
             
         except ValidationError as err:
-            return {"errors": err.messages}, 400
+            # Flatten marshmallow errors into a human-readable message
+            first_msg = next(iter(err.messages.values()))[0]
+            return {"message": first_msg}, 400
+
+@api.route('/register')
+class Register(Resource):
+    def post(self):
+        try:
+            data = RegisterSchema().load(request.json or {})
+            user = auth_service.register(
+                name=data['name'],
+                email=data['email'],
+                password=data['password'],
+            )
+            return {"message": "Account created successfully.", "user": UserSchema().dump(user)}, 201
+        except ValidationError as err:
+            first_msg = next(iter(err.messages.values()))[0]
+            return {"message": first_msg}, 400
 
 @api.route('/logout')
 class Logout(Resource):

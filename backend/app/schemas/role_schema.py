@@ -6,6 +6,14 @@ class RoleSchema(Schema):
     description = fields.String(allow_none=True)
     created_at = fields.DateTime(dump_only=True)
     updated_at = fields.DateTime(dump_only=True)
+    permissions = fields.Method('get_permissions')
+
+    def get_permissions(self, role):
+        return [
+            {'id': rp.permission.id, 'name': rp.permission.name, 'description': rp.permission.description}
+            for rp in (role.role_permissions or [])
+            if rp.permission
+        ]
 
 class PermissionSchema(Schema):
     id = fields.String(dump_only=True)

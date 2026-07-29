@@ -1,6 +1,8 @@
-from app.repositories import user_repo, auth_repo
+from app.repositories import user_repo, auth_repo, role_repo
 from app.core.security import check_password, generate_tokens, hash_password
 from app.core.exceptions import UnauthorizedException, BadRequestException
+from app.models.user import User
+from app.core.extensions import db
 from flask import request
 
 class AuthService:
@@ -34,6 +36,39 @@ class AuthService:
         auth_repo.log_login_history(user.id, ip_address, user_agent, "SUCCESS")
         
         return access_token, refresh_token
+
+    def register(self, name, email, password):
+        """Create a new account with the default 'User' role (falls back to any role)."""
+        if user_repo.get_by_email(email):
+            raise BadRequestException("An account with that email already exists.")
+
+        # Resolve default role
+        default_role = role_repo.get_by_name('User')
+        if not default_role:
+            default_role = role_repo.get_by_name('Admin')
+        if not default_role:
+            from app.models.role import Role
+            default_role = Role.query.filter_by(deleted_at=None).first()
+        if not default_role:
+            raise BadRequestException("No roles exist. Please contact an administrator.")
+
+        # Split full name into first / last
+        parts = name.strip().split(' ', 1)
+        first_name = parts[0]
+        last_name = parts[1] if len(parts) > 1 else ''
+
+        user = User(
+            email=email,
+            password_hash=hash_password(password),
+            first_name=first_name,
+            last_name=last_name,
+            role_id=default_role.id,
+            is_active=True,
+            is_locked=False,
+        )
+        db.session.add(user)
+        db.session.commit()
+        return user
 
     def logout(self, refresh_token):
         if refresh_token:

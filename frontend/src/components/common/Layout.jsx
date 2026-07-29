@@ -23,6 +23,7 @@ export default function Layout() {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -114,7 +115,7 @@ export default function Layout() {
               <p className="text-[10px] font-mono uppercase mt-0.5 text-indigo-400">{user?.role?.name || 'Super Admin'}</p>
             </div>
             <button 
-              onClick={logout}
+              onClick={() => setIsLogoutModalOpen(true)}
               className="flex w-full items-center space-x-3 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-400 transition-all hover:bg-red-500/10 hover:text-red-400 border border-transparent hover:border-red-500/30"
             >
               <LogOut className="h-4 w-4 shrink-0" />
@@ -136,6 +137,40 @@ export default function Layout() {
         isOpen={isCommandPaletteOpen}
         onClose={() => setIsCommandPaletteOpen(false)}
       />
+
+      {/* Logout Confirmation Modal */}
+      {isLogoutModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex flex-col items-center text-center space-y-4">
+              <div className="p-3 bg-red-500/10 text-red-500 rounded-full border border-red-500/20">
+                <LogOut className="w-8 h-8" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-100">Confirm Logout</h3>
+                <p className="text-sm text-slate-400 mt-2">Are you sure you want to end your session?</p>
+              </div>
+              <div className="flex w-full space-x-3 pt-4">
+                <button
+                  onClick={() => setIsLogoutModalOpen(false)}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-800 text-slate-300 text-sm font-semibold hover:bg-slate-700 hover:text-white transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => {
+                    setIsLogoutModalOpen(false);
+                    logout();
+                  }}
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-semibold transition-all shadow-lg shadow-red-900/20"
+                >
+                  Logout
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

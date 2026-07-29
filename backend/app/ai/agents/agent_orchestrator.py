@@ -4,6 +4,7 @@ from typing import Dict, Any, List
 from flask import current_app, has_app_context
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from app.ai.prompts.prompt_manager import PromptManager
+from app.ai.providers import get_ai_provider
 from app.core.logger import get_logger
 
 logger = get_logger()
@@ -15,19 +16,35 @@ class BaseAgent:
 
     def execute(self, user_query: str, context: dict = None) -> dict:
         start = time.time()
-        prompt = PromptManager.get_prompt(self.role_category)
-        
-        # Specialized Agent Reasoning Mock Logic
-        analysis = f"[{self.name}] Processed query: '{user_query[:100]}'."
+        system_prompt = PromptManager.get_prompt(self.role_category)
+
+        # Build RAG context string if available
+        rag_context = None
+        if context and context.get("retrieved_context"):
+            snippets = [c.get("text", "") for c in context["retrieved_context"] if c.get("text")]
+            if snippets:
+                rag_context = "\n\n".join(snippets[:3])
+
+        # Call the real LLM provider (auto-selects OpenAI / Gemini / Mock based on .env keys)
+        provider = get_ai_provider("auto")
+        response_text = provider.chat(
+            system_prompt=system_prompt,
+            user_message=user_query,
+            context=rag_context
+        )
+
         duration = round((time.time() - start) * 1000, 2)
+        provider_name = type(provider).__name__
 
         return {
             "agent_name": self.name,
             "category": self.role_category,
-            "response": analysis,
+            "response": response_text,
             "confidence_score": 0.95,
-            "duration_ms": duration
+            "duration_ms": duration,
+            "provider": provider_name
         }
+
 
 class SchemaAgent(BaseAgent):
     def __init__(self): super().__init__("SchemaAgent", "SCHEMA_ANALYSIS")
